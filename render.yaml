@@ -10,3 +10,5 @@ services:
         value: production
       - key: PYTHON_VERSION
         value: 3.9.16
+      - key: CI
+        value: false
