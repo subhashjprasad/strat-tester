@@ -6,7 +6,8 @@
       "Bash(npm install:*)",
       "Bash(pip install:*)",
       "Bash(python:*)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
