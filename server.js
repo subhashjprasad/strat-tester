@@ -37,11 +37,12 @@ app.post('/api/backtest', async (req, res) => {
       testType
     ];
     
-    console.log('Running Python command:', 'python', args.join(' '));
-    const pythonProcess = spawn('python', args);
+    console.log('Running Python command:', 'python3', args.join(' '));
+    const pythonProcess = spawn('python3', args);
 
     let result = '';
     let error = '';
+    let responseHandled = false;
 
     pythonProcess.stdout.on('data', (data) => {
       result += data.toString();
@@ -54,6 +55,8 @@ app.post('/api/backtest', async (req, res) => {
     });
 
     pythonProcess.on('close', (code) => {
+      if (responseHandled) return;
+      responseHandled = true;
       clearTimeout(timeoutHandle);
       
       // Clean up temp file
@@ -87,6 +90,8 @@ app.post('/api/backtest', async (req, res) => {
     // Timeout after 5 minutes for permutation tests, 30 seconds for regular backtests
     const timeout = testType === 'permutation' ? 300000 : 30000;
     const timeoutHandle = setTimeout(() => {
+      if (responseHandled) return;
+      responseHandled = true;
       pythonProcess.kill();
       res.status(408).json({ error: `${testType} execution timeout (${timeout/1000}s)` });
     }, timeout);
