@@ -1,0 +1,95 @@
+import yfinance as yf
+import pandas as pd
+from datetime import datetime, timedelta
+import numpy as np
+
+# --- Configuration ---
+STOCK_TICKER = "AAPL"  # Stock symbol to fetch
+
+# Choose your data preference:
+# Option 1: Hourly data (max ~2 years)
+# PERIOD = "2y"
+# INTERVAL = "1h"
+
+# Option 2: Daily data (max ~10+ years) - uncomment to use
+PERIOD = "5y"
+INTERVAL = "1d"
+
+# Popular tickers to try: AAPL, TSLA, GOOGL, MSFT, AMZN, NVDA, META, SPY, QQQ
+
+print(f"Fetching {PERIOD} of {INTERVAL} data for {STOCK_TICKER} using Yahoo Finance...")
+
+try:
+    # Create ticker object
+    ticker = yf.Ticker(STOCK_TICKER)
+    
+    # Download historical data
+    df = ticker.history(period=PERIOD, interval=INTERVAL)
+    
+    if df.empty:
+        print(f"No data found for {STOCK_TICKER}. Please check the ticker symbol.")
+    else:
+        # Reset index to make datetime a column
+        df.reset_index(inplace=True)
+        
+        # Handle different index names (Date for daily, Datetime for intraday)
+        if 'Date' in df.columns:
+            df.rename(columns={'Date': 'ts_event'}, inplace=True)
+        elif 'Datetime' in df.columns:
+            df.rename(columns={'Datetime': 'ts_event'}, inplace=True)
+            
+        # Rename other columns to match expected format
+        df.rename(columns={
+            'Open': 'open', 
+            'High': 'high', 
+            'Low': 'low', 
+            'Close': 'close', 
+            'Volume': 'volume'
+        }, inplace=True)
+        
+        # Add missing columns to match existing data format
+        df['rtype'] = 34
+        df['publisher_id'] = 2
+        df['instrument_id'] = hash(STOCK_TICKER) % 10000  # Generate consistent ID
+        df['symbol'] = STOCK_TICKER
+        
+        # Convert datetime to string format to match existing data
+        df['ts_event'] = df['ts_event'].dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        
+        # Remove any rows with NaN values
+        df.dropna(inplace=True)
+        
+        # Reorder columns to match existing format
+        column_order = ['ts_event', 'rtype', 'publisher_id', 'instrument_id', 'open', 'high', 'low', 'close', 'volume', 'symbol']
+        df = df[column_order]
+        
+        print(f"\nSuccessfully downloaded {len(df)} rows of data:")
+        print(f"Date range: {df['ts_event'].iloc[0]} to {df['ts_event'].iloc[-1]}")
+        print("\nFirst 5 rows:")
+        print(df.head())
+        print("\nLast 5 rows:")
+        print(df.tail())
+        
+        # Save to data directory
+        filename = f"data/{STOCK_TICKER}_{INTERVAL}.csv"
+        df.to_csv(filename, index=False)
+        print(f"\nData saved to: {filename}")
+        print(f"Total rows: {len(df)}")
+        
+        # Show some basic statistics
+        print(f"\nPrice range: ${df['low'].min():.2f} - ${df['high'].max():.2f}")
+        print(f"Average volume: {df['volume'].mean():,.0f}")
+
+except Exception as err:
+    print(f"An error occurred: {err}")
+    print("\nTroubleshooting tips:")
+    print("1. Install yfinance: pip install yfinance")
+    print("2. Check internet connection")
+    print("3. Verify ticker symbol is correct")
+    print("4. Try a different period/interval combination")
+    
+    # Common period/interval combinations that work
+    print("\nSupported combinations:")
+    print("- Hourly data: period='2y', interval='1h' (max ~2 years)")
+    print("- Daily data: period='10y', interval='1d' (max ~10 years)")  
+    print("- Minute data: period='7d', interval='1m' (max ~7 days)")

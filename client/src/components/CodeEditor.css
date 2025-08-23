@@ -1,0 +1,25 @@
+.code-editor {
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0d1117;
+}
+
+.editor-header {
+  background: #161b22;
+  padding: 8px 12px;
+  border-bottom: 1px solid #30363d;
+  font-size: 12px;
+  color: #7d8590;
+}
+
+.language-label {
+  font-weight: 500;
+  font-family: 'Mononoki', monospace;
+  color: #58a6ff;
+}
+
+.editor-container {
+  height: 400px;
+  overflow: hidden;
+}
