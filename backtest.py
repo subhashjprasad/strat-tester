@@ -116,20 +116,18 @@ def run_backtest(data, signals, initial_capital=10000):
 def calculate_buy_hold_benchmark(data, initial_capital=10000):
     """Calculate buy-and-hold benchmark performance"""
     try:
+        print("Starting buy-hold calculation...", file=sys.stderr, flush=True)
         start_price = data.iloc[0]['Close']
         end_price = data.iloc[-1]['Close']
         
         shares = initial_capital / start_price
         final_value = shares * end_price
         
-        # Calculate buy-and-hold portfolio values
-        bh_portfolio = []
-        for i in range(len(data)):
-            price = data.iloc[i]['Close']
-            value = shares * price
-            bh_portfolio.append(value)
-        
-        bh_portfolio = np.array(bh_portfolio)
+        # More memory-efficient calculation using vectorized operations
+        print("Calculating portfolio values vectorized...", file=sys.stderr, flush=True)
+        prices = data['Close'].values
+        bh_portfolio = shares * prices
+        print("Portfolio values calculated", file=sys.stderr, flush=True)
         
         # Buy-and-hold metrics
         bh_total_return = (final_value - initial_capital) / initial_capital * 100
@@ -161,30 +159,41 @@ def calculate_buy_hold_benchmark(data, initial_capital=10000):
 def calculate_metrics(portfolio_value, data, initial_capital=10000):
     """Calculate performance metrics"""
     try:
+        print("Converting portfolio to array...", file=sys.stderr, flush=True)
         portfolio_value = np.array(portfolio_value)
+        print(f"Portfolio array size: {len(portfolio_value)}", file=sys.stderr, flush=True)
         
         # Calculate buy-and-hold benchmark
+        print("Calculating buy-hold benchmark...", file=sys.stderr, flush=True)
         benchmark, bh_portfolio = calculate_buy_hold_benchmark(data, initial_capital)
+        print("Benchmark calculated", file=sys.stderr, flush=True)
         
         # Strategy metrics
+        print("Calculating strategy metrics...", file=sys.stderr, flush=True)
         total_return = (portfolio_value[-1] - initial_capital) / initial_capital * 100
         
         # Returns series
+        print("Calculating returns series...", file=sys.stderr, flush=True)
         returns = np.diff(portfolio_value) / portfolio_value[:-1]
         returns = returns[~np.isnan(returns)]
+        print(f"Returns calculated: {len(returns)} values", file=sys.stderr, flush=True)
         
         # Sharpe ratio (assuming 252*24 trading hours per year for hourly data)
+        print("Calculating Sharpe ratio...", file=sys.stderr, flush=True)
         if len(returns) > 0 and np.std(returns) > 0:
             annualized_return = np.mean(returns) * 252 * 24
             annualized_volatility = np.std(returns) * np.sqrt(252 * 24)
             sharpe_ratio = annualized_return / annualized_volatility
         else:
             sharpe_ratio = 0
+        print("Sharpe ratio calculated", file=sys.stderr, flush=True)
         
         # Maximum drawdown
+        print("Calculating maximum drawdown...", file=sys.stderr, flush=True)
         peak = np.maximum.accumulate(portfolio_value)
         drawdown = (portfolio_value - peak) / peak * 100
         max_drawdown = np.min(drawdown)
+        print("Drawdown calculated", file=sys.stderr, flush=True)
         
         # Alpha (excess return over benchmark)
         alpha = total_return - benchmark['total_return']
