@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import CodeEditor from './components/CodeEditor';
 import ResultsDisplay from './components/ResultsDisplay';
-import { BacktestResult, BacktestError } from './types';
+import { BacktestResult } from './types';
 import './App.css';
 
 const DEFAULT_STRATEGY = `def strategy(data):
