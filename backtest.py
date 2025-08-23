@@ -248,7 +248,7 @@ def calculate_metrics(portfolio_value, data, initial_capital=10000):
             'final_value': round(float(portfolio_value[-1]), 2),
             'alpha': round(float(alpha), 2),
             'benchmark': benchmark
-        }, bh_portfolio
+        }, bh_portfolio.astype(float).tolist()
         
     except Exception as e:
         raise Exception(f"Metrics calculation error: {str(e)}")
@@ -378,11 +378,11 @@ def main():
             for i in range(0, len(data), step):
                 equity_curve.append({
                     'date': data.iloc[i]['Date'].strftime('%Y-%m-%d %H:%M:%S'),
-                    'value': round(portfolio_value[i], 2)
+                    'value': round(float(portfolio_value[i]), 2)
                 })
                 benchmark_curve.append({
                     'date': data.iloc[i]['Date'].strftime('%Y-%m-%d %H:%M:%S'),
-                    'value': round(bh_portfolio[i], 2)
+                    'value': round(float(bh_portfolio[i]), 2)
                 })
             print("Equity curve data prepared", file=sys.stderr, flush=True)
             
