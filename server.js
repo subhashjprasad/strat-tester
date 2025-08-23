@@ -38,7 +38,27 @@ app.post('/api/backtest', async (req, res) => {
     ];
     
     console.log('Running Python command:', 'python3', args.join(' '));
-    const pythonProcess = spawn('python3', args);
+    console.log('Working directory:', __dirname);
+    console.log('Python args:', args);
+    
+    // Test Python availability first
+    console.log('Testing Python environment...');
+    const testPython = spawn('python3', ['-c', 'import pandas, numpy; print("Python deps OK")'], {
+      cwd: __dirname
+    });
+    
+    testPython.stdout.on('data', (data) => {
+      console.log('Python test output:', data.toString());
+    });
+    
+    testPython.stderr.on('data', (data) => {
+      console.error('Python test error:', data.toString());
+    });
+    
+    const pythonProcess = spawn('python3', args, {
+      cwd: __dirname,
+      env: { ...process.env, PYTHONPATH: __dirname }
+    });
 
     let result = '';
     let error = '';
@@ -52,6 +72,18 @@ app.post('/api/backtest', async (req, res) => {
       const errorText = data.toString();
       console.log('Python stderr:', errorText);
       error += errorText;
+    });
+
+    pythonProcess.on('error', (err) => {
+      console.error('Python process error:', err);
+      if (!responseHandled) {
+        responseHandled = true;
+        clearTimeout(timeoutHandle);
+        res.status(500).json({ 
+          error: 'Failed to start Python process', 
+          details: err.message 
+        });
+      }
     });
 
     pythonProcess.on('close', (code) => {
