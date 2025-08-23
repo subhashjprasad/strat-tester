@@ -268,6 +268,8 @@ def run_permutation_test(data, signals, num_permutations=100, initial_capital=10
 
 def main():
     try:
+        print("Backtest script starting...", file=sys.stderr, flush=True)
+        
         if len(sys.argv) < 3:
             raise Exception("Usage: python backtest.py <strategy_file> <data_file> [test_type]")
         
@@ -275,22 +277,31 @@ def main():
         data_file = sys.argv[2]
         test_type = sys.argv[3] if len(sys.argv) > 3 else 'backtest'
         
+        print(f"Loading strategy from: {strategy_file}", file=sys.stderr, flush=True)
         # Load strategy code
         with open(strategy_file, 'r') as f:
             strategy_code = f.read()
+        print("Strategy code loaded successfully", file=sys.stderr, flush=True)
         
+        print(f"Loading data from: {data_file}", file=sys.stderr, flush=True)
         # Load market data
         data = load_data(data_file)
+        print(f"Data loaded successfully: {len(data)} rows", file=sys.stderr, flush=True)
         
+        print("Executing strategy...", file=sys.stderr, flush=True)
         # Execute strategy
         signals = execute_strategy(strategy_code, data)
+        print(f"Strategy executed successfully: {len(signals)} signals", file=sys.stderr, flush=True)
         
         if test_type == 'permutation':
+            print("Running permutation test...", file=sys.stderr, flush=True)
             # Run permutation test
             permutation_results = run_permutation_test(data, signals)
             
+            print("Running basic backtest for comparison...", file=sys.stderr, flush=True)
             # Still run basic backtest for comparison
             portfolio_value, trades = run_backtest(data, signals)
+            print("Calculating metrics...", file=sys.stderr, flush=True)
             metrics, bh_portfolio = calculate_metrics(portfolio_value, data)
             
             # Prepare result
@@ -303,12 +314,17 @@ def main():
                 'total_trades': len(trades)
             }
         else:
+            print("Running standard backtest...", file=sys.stderr, flush=True)
             # Standard backtest
             portfolio_value, trades = run_backtest(data, signals)
+            print(f"Backtest completed: {len(trades)} trades", file=sys.stderr, flush=True)
             
+            print("Calculating metrics...", file=sys.stderr, flush=True)
             # Calculate metrics
             metrics, bh_portfolio = calculate_metrics(portfolio_value, data)
+            print("Metrics calculated successfully", file=sys.stderr, flush=True)
             
+            print("Preparing equity curve data...", file=sys.stderr, flush=True)
             # Prepare equity curve data (sample every 24 hours for visualization)
             step = max(1, len(data) // 500)  # Limit to ~500 points for chart
             equity_curve = []
@@ -322,6 +338,7 @@ def main():
                     'date': data.iloc[i]['Date'].strftime('%Y-%m-%d %H:%M:%S'),
                     'value': round(bh_portfolio[i], 2)
                 })
+            print("Equity curve data prepared", file=sys.stderr, flush=True)
             
             # Prepare result
             result = {
@@ -334,15 +351,19 @@ def main():
                 'total_trades': len(trades)
             }
         
+        print("Sending result...", file=sys.stderr, flush=True)
         print(json.dumps(result))
+        print("Result sent successfully", file=sys.stderr, flush=True)
         
     except Exception as e:
+        print(f"Error occurred: {str(e)}", file=sys.stderr, flush=True)
         error_result = {
             'success': False,
             'error': str(e),
             'traceback': traceback.format_exc()
         }
         print(json.dumps(error_result))
+        print("Error result sent", file=sys.stderr, flush=True)
 
 if __name__ == '__main__':
     main()
