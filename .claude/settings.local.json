@@ -19,6 +19,9 @@
       "Bash(flyctl:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\c\\Users\\subha\\.fly"
+    ]
   }
 }

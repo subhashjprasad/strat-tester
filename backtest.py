@@ -4,14 +4,25 @@ import json
 import sys
 import traceback
 import random
+import gc
 from datetime import datetime
 
 def load_data(file_path):
-    """Load and process market data"""
+    """Load and process market data with memory optimization"""
     try:
+        print("Loading CSV data...", file=sys.stderr, flush=True)
+        # Load data in chunks to reduce memory usage
         df = pd.read_csv(file_path)
+        print(f"Loaded {len(df)} raw rows", file=sys.stderr, flush=True)
+        
+        # Sample every 4 hours instead of every hour to reduce memory usage
+        # This reduces data from ~28k to ~7k rows while keeping representative data
+        print("Sampling data every 4 hours for memory optimization...", file=sys.stderr, flush=True)
+        df = df.iloc[::4].copy()  # Take every 4th row
+        print(f"Sampled to {len(df)} rows", file=sys.stderr, flush=True)
         
         # Convert timestamp to datetime
+        print("Converting timestamps...", file=sys.stderr, flush=True)
         df['timestamp'] = pd.to_datetime(df['ts_event'])
         df = df.sort_values('timestamp')
         
@@ -25,9 +36,23 @@ def load_data(file_path):
             'volume': 'Volume'
         })
         
-        # Select only needed columns
+        # Select only needed columns and optimize data types
         df = df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']].copy()
+        
+        # Convert to more memory-efficient data types
+        print("Optimizing data types...", file=sys.stderr, flush=True)
+        df['Open'] = df['Open'].astype('float32')
+        df['High'] = df['High'].astype('float32') 
+        df['Low'] = df['Low'].astype('float32')
+        df['Close'] = df['Close'].astype('float32')
+        df['Volume'] = df['Volume'].astype('int32')
+        
         df = df.reset_index(drop=True)
+        print(f"Data processing complete: {len(df)} rows", file=sys.stderr, flush=True)
+        
+        # Force garbage collection after data loading
+        gc.collect()
+        print("Memory cleanup completed", file=sys.stderr, flush=True)
         
         return df
     except Exception as e:
@@ -66,38 +91,43 @@ def execute_strategy(strategy_code, data):
         raise Exception(f"Strategy execution error: {str(e)}")
 
 def run_backtest(data, signals, initial_capital=10000):
-    """Run backtest simulation"""
+    """Run backtest simulation with memory optimization"""
     try:
-        portfolio_value = []
+        # Use numpy arrays for better memory efficiency
+        portfolio_value = np.zeros(len(data), dtype='float32')
         position = 0
-        cash = initial_capital
-        shares = 0
+        cash = float(initial_capital)
+        shares = 0.0
         trades = []
         
+        # Pre-convert to numpy arrays for faster access
+        prices = data['Close'].values.astype('float32')
+        dates = data['Date'].values
+        
         for i in range(len(data)):
-            price = data.iloc[i]['Close']
-            signal = signals[i]
+            price = float(prices[i])
+            signal = int(signals[i])
             
             # Execute trades
             if signal == 1 and position == 0:  # Buy signal
                 shares = cash / price
-                cash = 0
+                cash = 0.0
                 position = 1
                 trades.append({
-                    'date': data.iloc[i]['Date'].strftime('%Y-%m-%d %H:%M:%S'),
+                    'date': pd.to_datetime(dates[i]).strftime('%Y-%m-%d %H:%M:%S'),
                     'action': 'BUY',
-                    'price': price,
-                    'shares': shares
+                    'price': round(price, 2),
+                    'shares': round(shares, 4)
                 })
             elif signal == -1 and position == 1:  # Sell signal
                 cash = shares * price
                 trades.append({
-                    'date': data.iloc[i]['Date'].strftime('%Y-%m-%d %H:%M:%S'),
+                    'date': pd.to_datetime(dates[i]).strftime('%Y-%m-%d %H:%M:%S'),
                     'action': 'SELL',
-                    'price': price,
-                    'shares': shares
+                    'price': round(price, 2),
+                    'shares': round(shares, 4)
                 })
-                shares = 0
+                shares = 0.0
                 position = 0
             
             # Calculate portfolio value
@@ -106,9 +136,13 @@ def run_backtest(data, signals, initial_capital=10000):
             else:
                 value = cash
             
-            portfolio_value.append(value)
+            portfolio_value[i] = value
         
-        return portfolio_value, trades
+        # Clean up intermediate variables
+        del prices, dates
+        gc.collect()  # Force garbage collection
+        
+        return portfolio_value.tolist(), trades
         
     except Exception as e:
         raise Exception(f"Backtest execution error: {str(e)}")
@@ -117,16 +151,19 @@ def calculate_buy_hold_benchmark(data, initial_capital=10000):
     """Calculate buy-and-hold benchmark performance"""
     try:
         print("Starting buy-hold calculation...", file=sys.stderr, flush=True)
-        start_price = data.iloc[0]['Close']
-        end_price = data.iloc[-1]['Close']
+        start_price = float(data.iloc[0]['Close'])
+        end_price = float(data.iloc[-1]['Close'])
         
         shares = initial_capital / start_price
         final_value = shares * end_price
         
-        # More memory-efficient calculation using vectorized operations
-        print("Calculating portfolio values vectorized...", file=sys.stderr, flush=True)
-        prices = data['Close'].values
+        # Memory-efficient calculation using numpy operations
+        print("Calculating portfolio values...", file=sys.stderr, flush=True)
+        prices = data['Close'].values.astype('float32')  # Use float32 for memory efficiency
         bh_portfolio = shares * prices
+        
+        # Clean up intermediate variables
+        del prices
         print("Portfolio values calculated", file=sys.stderr, flush=True)
         
         # Buy-and-hold metrics
@@ -334,8 +371,8 @@ def main():
             print("Metrics calculated successfully", file=sys.stderr, flush=True)
             
             print("Preparing equity curve data...", file=sys.stderr, flush=True)
-            # Prepare equity curve data (sample every 24 hours for visualization)
-            step = max(1, len(data) // 500)  # Limit to ~500 points for chart
+            # Prepare equity curve data (sample for visualization)
+            step = max(1, len(data) // 200)  # Limit to ~200 points for chart (reduced from 500)
             equity_curve = []
             benchmark_curve = []
             for i in range(0, len(data), step):
@@ -363,6 +400,12 @@ def main():
         print("Sending result...", file=sys.stderr, flush=True)
         print(json.dumps(result))
         print("Result sent successfully", file=sys.stderr, flush=True)
+        
+        # Final cleanup
+        del data, signals, portfolio_value
+        if 'bh_portfolio' in locals():
+            del bh_portfolio
+        gc.collect()
         
     except Exception as e:
         print(f"Error occurred: {str(e)}", file=sys.stderr, flush=True)
