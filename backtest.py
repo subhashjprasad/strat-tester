@@ -15,11 +15,12 @@ def load_data(file_path):
         df = pd.read_csv(file_path)
         print(f"Loaded {len(df)} raw rows", file=sys.stderr, flush=True)
         
-        # Sample every 4 hours instead of every hour to reduce memory usage
-        # This reduces data from ~28k to ~7k rows while keeping representative data
-        print("Sampling data every 4 hours for memory optimization...", file=sys.stderr, flush=True)
-        df = df.iloc[::4].copy()  # Take every 4th row
-        print(f"Sampled to {len(df)} rows", file=sys.stderr, flush=True)
+        # For memory optimization, use a smaller recent dataset instead of sampling
+        # Take the most recent 10,000 rows (roughly 1+ years of hourly data)
+        print("Using recent 10,000 rows for memory optimization...", file=sys.stderr, flush=True)
+        if len(df) > 10000:
+            df = df.tail(10000).copy()  # Take the last 10,000 rows
+        print(f"Dataset reduced to {len(df)} rows", file=sys.stderr, flush=True)
         
         # Convert timestamp to datetime
         print("Converting timestamps...", file=sys.stderr, flush=True)
