@@ -19,7 +19,7 @@ app.use(express.static(path.join(__dirname, 'client/build')));
 // Backtest endpoint
 app.post('/api/backtest', async (req, res) => {
   try {
-    const { strategyCode, testType = 'backtest' } = req.body;
+    const { strategyCode, testType = 'backtest', timeframe = '1h' } = req.body;
     
     if (!strategyCode) {
       return res.status(400).json({ error: 'Strategy code is required' });
@@ -34,7 +34,8 @@ app.post('/api/backtest', async (req, res) => {
       path.join(__dirname, 'backtest.py'),
       tempStrategyFile,
       path.join(__dirname, 'data', 'SPY_1hour.csv'),
-      testType
+      testType,
+      timeframe
     ];
     
     console.log('Running Python command:', 'python3', args.join(' '));

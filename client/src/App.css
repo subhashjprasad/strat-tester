@@ -67,20 +67,23 @@
   gap: 16px;
 }
 
-.test-type-selector {
+.test-type-selector,
+.timeframe-selector {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.test-type-selector label {
+.test-type-selector label,
+.timeframe-selector label {
   font-weight: 500;
   color: #e6edf3;
   font-size: 14px;
   font-family: 'Mononoki', monospace;
 }
 
-.test-type-select {
+.test-type-select,
+.timeframe-select {
   padding: 8px 12px;
   border: 1px solid #30363d;
   border-radius: 6px;
@@ -92,7 +95,8 @@
   font-family: 'Mononoki', monospace;
 }
 
-.test-type-select:focus {
+.test-type-select:focus,
+.timeframe-select:focus {
   outline: none;
   border-color: #58a6ff;
   box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);

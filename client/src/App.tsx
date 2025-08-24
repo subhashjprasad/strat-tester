@@ -43,6 +43,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [testType, setTestType] = useState<'backtest' | 'permutation'>('backtest');
+  const [timeframe, setTimeframe] = useState<'1h' | '4h' | '1d' | 'all'>('1h');
 
   const runTest = async () => {
     setLoading(true);
@@ -57,7 +58,8 @@ function App() {
         },
         body: JSON.stringify({ 
           strategyCode,
-          testType 
+          testType,
+          timeframe
         }),
       });
 
@@ -105,6 +107,21 @@ function App() {
               >
                 <option value="backtest">Backtest</option>
                 <option value="permutation">Permutation Test</option>
+              </select>
+            </div>
+            
+            <div className="timeframe-selector">
+              <label htmlFor="timeframe">Timeframe:</label>
+              <select 
+                id="timeframe"
+                value={timeframe} 
+                onChange={(e) => setTimeframe(e.target.value as '1h' | '4h' | '1d' | 'all')}
+                className="timeframe-select"
+              >
+                <option value="1h">1 Hour (Recent ~10k hours)</option>
+                <option value="4h">4 Hours (Recent ~20k hours)</option>
+                <option value="1d">1 Day (All available data)</option>
+                <option value="all">All Data (Raw hourly)</option>
               </select>
             </div>
             

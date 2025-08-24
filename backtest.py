@@ -7,20 +7,36 @@ import random
 import gc
 from datetime import datetime
 
-def load_data(file_path):
-    """Load and process market data with memory optimization"""
+def load_data(file_path, timeframe='1h'):
+    """Load and process market data with memory optimization based on timeframe"""
     try:
         print("Loading CSV data...", file=sys.stderr, flush=True)
         # Load data in chunks to reduce memory usage
         df = pd.read_csv(file_path)
         print(f"Loaded {len(df)} raw rows", file=sys.stderr, flush=True)
         
-        # For memory optimization, use a smaller recent dataset instead of sampling
-        # Take the most recent 10,000 rows (roughly 1+ years of hourly data)
-        print("Using recent 10,000 rows for memory optimization...", file=sys.stderr, flush=True)
-        if len(df) > 10000:
-            df = df.tail(10000).copy()  # Take the last 10,000 rows
-        print(f"Dataset reduced to {len(df)} rows", file=sys.stderr, flush=True)
+        # Smart data filtering based on timeframe to optimize memory usage
+        if timeframe == '1h':
+            # 1 hour: Recent 10,000 rows (fine granularity, recent data)
+            if len(df) > 10000:
+                df = df.tail(10000).copy()
+            print(f"1h timeframe: Using recent {len(df)} rows", file=sys.stderr, flush=True)
+        elif timeframe == '4h':
+            # 4 hours: Sample every 4th row for more historical coverage
+            df = df.iloc[::4].copy()  # Every 4th hour
+            print(f"4h timeframe: Sampled to {len(df)} rows (every 4 hours)", file=sys.stderr, flush=True)
+        elif timeframe == '1d':
+            # 1 day: Sample every 24th row (daily data) for maximum historical coverage
+            df = df.iloc[::24].copy()  # Every 24 hours (daily)
+            print(f"1d timeframe: Sampled to {len(df)} rows (daily)", file=sys.stderr, flush=True)
+        elif timeframe == 'all':
+            # All data: Use everything but warn about memory usage
+            print(f"All data: Using full dataset of {len(df)} rows (may use more memory)", file=sys.stderr, flush=True)
+        else:
+            # Default to 1h behavior
+            if len(df) > 10000:
+                df = df.tail(10000).copy()
+            print(f"Default: Using recent {len(df)} rows", file=sys.stderr, flush=True)
         
         # Convert timestamp to datetime
         print("Converting timestamps...", file=sys.stderr, flush=True)
@@ -318,11 +334,12 @@ def main():
         print("Backtest script starting...", file=sys.stderr, flush=True)
         
         if len(sys.argv) < 3:
-            raise Exception("Usage: python backtest.py <strategy_file> <data_file> [test_type]")
+            raise Exception("Usage: python backtest.py <strategy_file> <data_file> [test_type] [timeframe]")
         
         strategy_file = sys.argv[1]
         data_file = sys.argv[2]
         test_type = sys.argv[3] if len(sys.argv) > 3 else 'backtest'
+        timeframe = sys.argv[4] if len(sys.argv) > 4 else '1h'
         
         print(f"Loading strategy from: {strategy_file}", file=sys.stderr, flush=True)
         # Load strategy code
@@ -330,9 +347,9 @@ def main():
             strategy_code = f.read()
         print("Strategy code loaded successfully", file=sys.stderr, flush=True)
         
-        print(f"Loading data from: {data_file}", file=sys.stderr, flush=True)
+        print(f"Loading data from: {data_file} with timeframe: {timeframe}", file=sys.stderr, flush=True)
         # Load market data
-        data = load_data(data_file)
+        data = load_data(data_file, timeframe)
         print(f"Data loaded successfully: {len(data)} rows", file=sys.stderr, flush=True)
         
         print("Executing strategy...", file=sys.stderr, flush=True)
