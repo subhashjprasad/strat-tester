@@ -119,8 +119,8 @@ function App() {
                 className="timeframe-select"
               >
                 <option value="1h">1 Hour (Recent ~1 year, 10k points)</option>
-                <option value="4h">4 Hours (Multi-year, ~7k points)</option>
-                <option value="1d">1 Day (Full history, ~1.2k points)</option>
+                <option value="4h">4 Hours (Multi-Year, ~7k points)</option>
+                <option value="1d">1 Day (Full History, ~1.2k points)</option>
               </select>
             </div>
             
