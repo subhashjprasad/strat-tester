@@ -29,9 +29,6 @@ def load_data(file_path, timeframe='1h'):
             # 1 day: Sample every 24th row (daily data) for maximum historical coverage
             df = df.iloc[::24].copy()  # Every 24 hours (daily)
             print(f"1d timeframe: Sampled to {len(df)} rows (daily)", file=sys.stderr, flush=True)
-        elif timeframe == 'all':
-            # All data: Use everything but warn about memory usage
-            print(f"All data: Using full dataset of {len(df)} rows (may use more memory)", file=sys.stderr, flush=True)
         else:
             # Default to 1h behavior
             if len(df) > 10000:

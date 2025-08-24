@@ -43,7 +43,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [testType, setTestType] = useState<'backtest' | 'permutation'>('backtest');
-  const [timeframe, setTimeframe] = useState<'1h' | '4h' | '1d' | 'all'>('1h');
+  const [timeframe, setTimeframe] = useState<'1h' | '4h' | '1d'>('1h');
 
   const runTest = async () => {
     setLoading(true);
@@ -115,13 +115,12 @@ function App() {
               <select 
                 id="timeframe"
                 value={timeframe} 
-                onChange={(e) => setTimeframe(e.target.value as '1h' | '4h' | '1d' | 'all')}
+                onChange={(e) => setTimeframe(e.target.value as '1h' | '4h' | '1d')}
                 className="timeframe-select"
               >
-                <option value="1h">1 Hour (Recent ~10k hours)</option>
-                <option value="4h">4 Hours (Recent ~20k hours)</option>
-                <option value="1d">1 Day (All available data)</option>
-                <option value="all">All Data (Raw hourly)</option>
+                <option value="1h">1 Hour (Recent ~1 year, 10k points)</option>
+                <option value="4h">4 Hours (Multi-year, ~7k points)</option>
+                <option value="1d">1 Day (Full history, ~1.2k points)</option>
               </select>
             </div>
             
